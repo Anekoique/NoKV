@@ -11,7 +11,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	NoKV "github.com/feichai0017/NoKV"
+	NoKV "github.com/feichai0017/NoKV/engine"
 )
 
 var exit = os.Exit

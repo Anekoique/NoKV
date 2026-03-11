@@ -14,7 +14,7 @@
     <a href="https://goreportcard.com/report/github.com/feichai0017/NoKV">
       <img alt="Go Report Card" src="https://img.shields.io/badge/go%20report-A+-brightgreen" />
     </a>
-    <a href="https://pkg.go.dev/github.com/feichai0017/NoKV">
+    <a href="https://pkg.go.dev/github.com/feichai0017/NoKV/engine">
       <img alt="Go Reference" src="https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white" />
     </a>
     <a href="https://github.com/avelino/awesome-go#databases-implemented-in-go">
@@ -62,7 +62,7 @@ Start an end-to-end playground with either the local script or Docker Compose. B
 
 ```bash
 # Option A: local processes
-./scripts/run_local_cluster.sh --config ./raft_config.example.json
+./tools/scripts/run_local_cluster.sh --config ./raft_config.example.json
 # In another shell: launch the Redis gateway on top of the running cluster
 go run ./cmd/nokv-redis --addr 127.0.0.1:6380 --raft-config raft_config.example.json
 
@@ -90,7 +90,7 @@ import (
 	"fmt"
 	"log"
 
-	NoKV "github.com/feichai0017/NoKV"
+	NoKV "github.com/feichai0017/NoKV/engine"
 )
 
 func main() {
@@ -140,20 +140,34 @@ Everything hangs off a single file: [`raft_config.example.json`](./raft_config.e
 ]
 ```
 
-- **Local scripts** (`run_local_cluster.sh`, `serve_from_config.sh`, `bootstrap_from_config.sh`) ingest the same JSON, so local runs match production layouts.
+- **Local scripts** (`tools/scripts/run_local_cluster.sh`, `tools/scripts/serve_from_config.sh`, `tools/scripts/bootstrap_from_config.sh`) ingest the same JSON, so local runs match production layouts.
 - **Docker Compose** mounts the file into each container; manifests, transports, and Redis gateway all stay in sync.
 - Need more stores or regions? Update the JSON and re-run the script/Compose—no code changes required.
-- Programmatic access: import `github.com/feichai0017/NoKV/config` and call `config.LoadFile` / `Validate` for a single source of truth across tools.
+- Programmatic access: import `github.com/feichai0017/NoKV/cluster/config` and call `config.LoadFile` / `Validate` for a single source of truth across tools.
+
+## 🗂️ Repository Layout
+
+The repository root is now metadata and documentation only. Runtime code is split by domain:
+
+- `engine/` – embeddable NoKV API and runtime wiring
+- `storage/` – `kv`, `lsm`, `manifest`, `wal`, `vlog`, `file`, `vfs`, `cache`, `mmap`
+- `cluster/` – topology config, percolator, raft, and raftstore
+- `pd/` – PD-lite routing, TSO, and persistence
+- `observability/` – metrics and hot-key tracking
+- `tools/` – scripts and benchmark harness
+- `tests/` – black-box and repository-layout tests
+
+See [docs/project_layout.md](docs/project_layout.md) for the guided map.
 
 ### 🧬 Tech Stack Snapshot
 
 | Layer | Tech/Package | Why it matters |
 | --- | --- | --- |
-| Storage Core | `lsm/`, `wal/`, `vlog/` | Hybrid log-structured design with manifest-backed durability and value separation. |
-| Concurrency | `percolator/`, `raftstore/client` | Distributed 2PC, lock management, and MVCC version semantics in raft mode. |
-| Replication | `raftstore/*` + `pd/*` | Multi-Raft data plane plus PD-backed control plane (routing, TSO, heartbeats). |
+| Storage Core | `storage/lsm/`, `storage/wal/`, `storage/vlog/` | Hybrid log-structured design with manifest-backed durability and value separation. |
+| Concurrency | `cluster/percolator/`, `cluster/raftstore/client` | Distributed 2PC, lock management, and MVCC version semantics in raft mode. |
+| Replication | `cluster/raftstore/*` + `pd/*` | Multi-Raft data plane plus PD-backed control plane (routing, TSO, heartbeats). |
 | Tooling | `cmd/nokv`, `cmd/nokv-config`, `cmd/nokv-redis` | CLI, config helper, Redis-compatible gateway share the same topology file. |
-| Observability | `stats`, `hotring`, expvar | Built-in metrics, hot-key analytics, and crash recovery traces. |
+| Observability | `engine/stats.go`, `observability/hotring`, expvar | Built-in metrics, hot-key analytics, and crash recovery traces. |
 
 ---
 
@@ -189,15 +203,15 @@ Dive deeper in [docs/architecture.md](docs/architecture.md).
 
 | Module | Responsibilities | Source | Docs |
 | --- | --- | --- | --- |
-| WAL | Append-only segments with CRC, rotation, replay (`wal.Manager`). | [`wal/`](./wal) | [WAL internals](docs/wal.md) |
-| LSM | MemTable, flush pipeline, leveled compactions, iterator merging. | [`lsm/`](./lsm) | [Memtable](docs/memtable.md)<br>[Flush pipeline](docs/flush.md)<br>[Cache](docs/cache.md) |
-| Manifest | VersionEdit log + CURRENT handling, WAL/vlog checkpoints, Region metadata. | [`manifest/`](./manifest) | [Manifest semantics](docs/manifest.md) |
-| ValueLog | Large value storage, GC, discard stats integration. | [`vlog.go`](./vlog.go), [`vlog/`](./vlog) | [Value log design](docs/vlog.md) |
-| Percolator | Distributed MVCC 2PC primitives (prewrite/commit/rollback/resolve/status). | [`percolator/`](./percolator) | [Percolator transactions](docs/percolator.md) |
-| RaftStore | Multi-Raft Region management, hooks, metrics, transport. | [`raftstore/`](./raftstore) | [RaftStore overview](docs/raftstore.md) |
-| HotRing | Hot key tracking, throttling helpers. | [`hotring/`](./hotring) | [HotRing overview](docs/hotring.md) |
-| Observability | Periodic stats, hot key tracking, CLI integration. | [`stats.go`](./stats.go), [`cmd/nokv`](./cmd/nokv) | [Stats & observability](docs/stats.md)<br>[CLI reference](docs/cli.md) |
-| Filesystem | Pebble-inspired `vfs` abstraction + mmap-backed file helpers shared by SST/vlog, WAL, and manifest. | [`vfs/`](./vfs), [`file/`](./file) | [VFS](docs/vfs.md)<br>[File abstractions](docs/file.md) |
+| WAL | Append-only segments with CRC, rotation, replay (`wal.Manager`). | [`storage/wal/`](./storage/wal) | [WAL internals](docs/wal.md) |
+| LSM | MemTable, flush pipeline, leveled compactions, iterator merging. | [`storage/lsm/`](./storage/lsm) | [Memtable](docs/memtable.md)<br>[Flush pipeline](docs/flush.md)<br>[Cache](docs/cache.md) |
+| Manifest | VersionEdit log + CURRENT handling, WAL/vlog checkpoints, Region metadata. | [`storage/manifest/`](./storage/manifest) | [Manifest semantics](docs/manifest.md) |
+| ValueLog | Large value storage, GC, discard stats integration. | [`engine/vlog.go`](./engine/vlog.go), [`storage/vlog/`](./storage/vlog) | [Value log design](docs/vlog.md) |
+| Percolator | Distributed MVCC 2PC primitives (prewrite/commit/rollback/resolve/status). | [`cluster/percolator/`](./cluster/percolator) | [Percolator transactions](docs/percolator.md) |
+| RaftStore | Multi-Raft Region management, hooks, metrics, transport. | [`cluster/raftstore/`](./cluster/raftstore) | [RaftStore overview](docs/raftstore.md) |
+| HotRing | Hot key tracking, throttling helpers. | [`observability/hotring/`](./observability/hotring) | [HotRing overview](docs/hotring.md) |
+| Observability | Periodic stats, hot key tracking, CLI integration. | [`engine/stats.go`](./engine/stats.go), [`cmd/nokv`](./cmd/nokv) | [Stats & observability](docs/stats.md)<br>[CLI reference](docs/cli.md) |
+| Filesystem | Pebble-inspired `vfs` abstraction + mmap-backed file helpers shared by SST/vlog, WAL, and manifest. | [`storage/vfs/`](./storage/vfs), [`storage/file/`](./storage/file) | [VFS](docs/vfs.md)<br>[File abstractions](docs/file.md) |
 
 Each module has a dedicated document under `docs/` describing APIs, diagrams, and recovery notes.
 
@@ -212,7 +226,7 @@ Each module has a dedicated document under `docs/` describing APIs, diagrams, an
   - `nokv manifest --workdir <dir>`
   - `nokv regions --workdir <dir> [--json]`
   - `nokv vlog --workdir <dir>`
-- `hotring` continuously surfaces hot keys in stats + CLI so you can pre-warm caches or debug skewed workloads.
+- `observability/hotring` continuously surfaces hot keys in stats + CLI so you can pre-warm caches or debug skewed workloads.
 
 More in [docs/cli.md](docs/cli.md) and [docs/testing.md](docs/testing.md#4-observability-in-tests).
 
@@ -220,10 +234,10 @@ More in [docs/cli.md](docs/cli.md) and [docs/testing.md](docs/testing.md#4-obser
 
 ## 🔌 Redis Gateway
 
-- `cmd/nokv-redis` exposes a RESP-compatible endpoint. In embedded mode (`--workdir`) commands execute through regular DB APIs; in distributed mode (`--raft-config`) calls are routed through `raftstore/client` and committed with TwoPhaseCommit.
+- `cmd/nokv-redis` exposes a RESP-compatible endpoint. In embedded mode (`--workdir`) commands execute through regular DB APIs; in distributed mode (`--raft-config`) calls are routed through `cluster/raftstore/client` and committed with TwoPhaseCommit.
 - In raft mode, TTL is persisted directly in each value entry (`expires_at`) through the same 2PC write path as the value payload.
 - `--metrics-addr` exposes Redis gateway metrics under `NoKV.Stats.redis` via expvar. In raft mode, `--pd-addr` can override `config.pd` when you need a non-default PD endpoint.
-- A ready-to-use cluster configuration is available at `raft_config.example.json`, matching both `scripts/run_local_cluster.sh` and the Docker Compose setup.
+- A ready-to-use cluster configuration is available at `raft_config.example.json`, matching both `tools/scripts/run_local_cluster.sh` and the Docker Compose setup.
 
 > For the complete command matrix, configuration and deployment guides, see [docs/nokv-redis.md](docs/nokv-redis.md).
 

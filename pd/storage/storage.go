@@ -3,7 +3,7 @@ package storage
 import (
 	"math"
 
-	"github.com/feichai0017/NoKV/manifest"
+	"github.com/feichai0017/NoKV/storage/manifest"
 )
 
 // StateFileName is the allocator checkpoint file name used by local storage.

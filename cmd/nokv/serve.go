@@ -12,15 +12,15 @@ import (
 	"syscall"
 	"time"
 
-	NoKV "github.com/feichai0017/NoKV"
-	"github.com/feichai0017/NoKV/manifest"
+	NoKV "github.com/feichai0017/NoKV/engine"
+	"github.com/feichai0017/NoKV/storage/manifest"
 	pdadapter "github.com/feichai0017/NoKV/pd/adapter"
 	pdclient "github.com/feichai0017/NoKV/pd/client"
-	myraft "github.com/feichai0017/NoKV/raft"
-	"github.com/feichai0017/NoKV/raftstore"
-	"github.com/feichai0017/NoKV/raftstore/kv"
-	"github.com/feichai0017/NoKV/raftstore/peer"
-	"github.com/feichai0017/NoKV/raftstore/scheduler"
+	myraft "github.com/feichai0017/NoKV/cluster/raft"
+	"github.com/feichai0017/NoKV/cluster/raftstore"
+	"github.com/feichai0017/NoKV/cluster/raftstore/kv"
+	"github.com/feichai0017/NoKV/cluster/raftstore/peer"
+	"github.com/feichai0017/NoKV/cluster/raftstore/scheduler"
 )
 
 var notifyContext = signal.NotifyContext

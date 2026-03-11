@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/feichai0017/NoKV/manifest"
+	"github.com/feichai0017/NoKV/storage/manifest"
 )
 
 func TestClusterStoreHeartbeatAndSnapshot(t *testing.T) {

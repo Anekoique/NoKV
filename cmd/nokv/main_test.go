@@ -13,11 +13,11 @@ import (
 	"testing"
 	"time"
 
-	NoKV "github.com/feichai0017/NoKV"
-	"github.com/feichai0017/NoKV/kv"
-	"github.com/feichai0017/NoKV/manifest"
-	storepkg "github.com/feichai0017/NoKV/raftstore/store"
-	"github.com/feichai0017/NoKV/wal"
+	NoKV "github.com/feichai0017/NoKV/engine"
+	"github.com/feichai0017/NoKV/storage/kv"
+	"github.com/feichai0017/NoKV/storage/manifest"
+	storepkg "github.com/feichai0017/NoKV/cluster/raftstore/store"
+	"github.com/feichai0017/NoKV/storage/wal"
 	"github.com/stretchr/testify/require"
 )
 

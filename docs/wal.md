@@ -24,10 +24,10 @@ uint8  type
 uint32 checksum (CRC32 Castagnoli over type + payload)
 ```
 
-- Checksums use `kv.CastagnoliCrcTable`, the same polynomial used by RocksDB (Castagnoli). Record encoding/decoding lives in `wal/record.go`.
+- Checksums use `kv.CastagnoliCrcTable`, the same polynomial used by RocksDB (Castagnoli). Record encoding/decoding lives in `storage/wal/record.go`.
 - The type byte allows mixing LSM mutations with raft log/state/snapshot records in the same WAL segment.
 - Appends are buffered by `bufio.Writer` so batches become single system calls.
-- Replay stops cleanly at truncated tails; tests simulate torn writes by truncating the final bytes and verifying replay remains idempotent (`wal/manager_test.go::TestManagerReplayHandlesTruncate`).
+- Replay stops cleanly at truncated tails; tests simulate torn writes by truncating the final bytes and verifying replay remains idempotent (`storage/wal/manager_test.go::TestManagerReplayHandlesTruncate`).
 
 ---
 
@@ -67,8 +67,8 @@ Compared with Badger: Badger keeps a single vlog for both data and durability. N
 | `lsm.memTable.set` | Encodes each entry (`kv.EncodeEntry`) and appends to WAL before inserting into the active memtable index (`ART` by default, `skiplist` when explicitly selected). |
 | `DB.commitWorker` | Commit worker applies batched writes via `writeToLSM`, which calls `lsm.SetBatch` and appends one WAL entry-batch record per request batch. |
 | `DB.Set` / `DB.SetWithTTL` / `DB.Del` / `DB.ApplyInternalEntries` | User/internal writes all flow through the same commit queue and eventually reach `lsm.SetBatch` + WAL append. |
-| `lsm/levels.go::flush` | Persists WAL checkpoint via `manifest.LogEdits(EditAddFile, EditLogPointer)` during flush install. |
-| `lsm/levels.go::flush` + `lsm/levelManager.canRemoveWalSegment` | Removes obsolete WAL segments after checkpoint/raft constraints are satisfied. |
+| `storage/lsm/levels.go::flush` | Persists WAL checkpoint via `manifest.LogEdits(EditAddFile, EditLogPointer)` during flush install. |
+| `storage/lsm/levels.go::flush` + `storage/lsm/levelManager.canRemoveWalSegment` | Removes obsolete WAL segments after checkpoint/raft constraints are satisfied. |
 | `db.runRecoveryChecks` | Ensures WAL directory invariants before manifest replay, similar to Badger's directory bootstrap. |
 
 ---
@@ -96,7 +96,7 @@ surface warnings when raft-typed records dominate the log. It:
 - Exposes counters (`wal.auto_gc_runs/removed/last_unix`) and warning state
   (`wal.typed_record_ratio/warning/reason`) through `StatsSnapshot.WAL`.
 
-Relevant options (see `options.go` for defaults):
+Relevant options (see `engine/options.go` for defaults):
 - `EnableWALWatchdog`
 - `WALAutoGCInterval`
 - `WALAutoGCMinRemovable`
@@ -125,8 +125,8 @@ Relevant options (see `options.go` for defaults):
 
 ## 9. Truncation Metadata
 
-- `raftstore/engine/wal_storage` keeps a per-group index of `[firstIndex,lastIndex]` spans for each WAL record so it can map raft log indices back to the segment that stored them.
+- `cluster/raftstore/engine/wal_storage` keeps a per-group index of `[firstIndex,lastIndex]` spans for each WAL record so it can map raft log indices back to the segment that stored them.
 - When a log is truncated (either via snapshot or future compaction hooks), the manifest is updated via `LogRaftTruncate` with the index/term, segment ID (`RaftLogPointer.SegmentIndex`), and byte offset (`RaftLogPointer.TruncatedOffset`) that delimit the remaining WAL data.
-- `lsm/levelManager.canRemoveWalSegment` now blocks garbage collection whenever any raft group still references a segment through its truncation metadata, preventing slow followers from losing required WAL history while letting aggressively compacted groups release older segments earlier.
+- `storage/lsm/levelManager.canRemoveWalSegment` now blocks garbage collection whenever any raft group still references a segment through its truncation metadata, preventing slow followers from losing required WAL history while letting aggressively compacted groups release older segments earlier.
 
 For broader context, read the [architecture overview](architecture.md) and [flush pipeline](flush.md) documents.

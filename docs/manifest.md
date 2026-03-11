@@ -7,7 +7,7 @@ The manifest is NoKV's metadata log for:
 - value-log metadata (`EditValueLogHead`, `EditDeleteValueLog`, `EditUpdateValueLog`)
 - raft and region metadata (`EditRaftPointer`, `EditRegion`)
 
-Implementation: [`manifest/manager.go`](../manifest/manager.go), [`manifest/codec.go`](../manifest/codec.go), [`manifest/types.go`](../manifest/types.go).
+Implementation: [`storage/manifest/manager.go`](../storage/manifest/manager.go), [`storage/manifest/codec.go`](../storage/manifest/codec.go), [`storage/manifest/types.go`](../storage/manifest/types.go).
 
 ---
 
@@ -81,8 +81,8 @@ If rewrite fails before `CURRENT` update, restart continues using previous manif
 
 | Module | Manifest usage |
 | --- | --- |
-| `lsm/levels.go::flush` | Logs `EditAddFile` + `EditLogPointer` after SST install; compaction logs add/delete edits. |
-| `lsm/levels.go::build` | During startup, missing/corrupt SST entries are marked stale and cleaned via `EditDeleteFile`. |
+| `storage/lsm/levels.go::flush` | Logs `EditAddFile` + `EditLogPointer` after SST install; compaction logs add/delete edits. |
+| `storage/lsm/levels.go::build` | During startup, missing/corrupt SST entries are marked stale and cleaned via `EditDeleteFile`. |
 | `wal` | Replays from manifest checkpoint (`LogSegment`, `LogOffset`). |
 | `vlog` | Persists head/update/delete metadata and uses manifest state for stale/orphan cleanup on startup. |
 | `raftstore` | Persists raft pointers and region metadata through manifest edits. |

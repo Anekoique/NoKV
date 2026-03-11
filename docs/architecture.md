@@ -92,7 +92,7 @@ flowchart TD
 - Watermarks (`utils.WaterMark`) are used in durability/visibility coordination; they have no background goroutine and advance via mutex + atomics.
 
 ### 2.6 Write Pipeline & Backpressure
-- Writes enqueue into a commit queue (`db_write.go`) where requests are coalesced into batches before a commit worker drains them.
+- Writes enqueue into a commit queue (`engine/db_write.go`) where requests are coalesced into batches before a commit worker drains them.
 - The commit worker always writes the value log first (when needed), then applies WAL/LSM updates; `SyncWrites` adds a WAL fsync step.
 - Batch sizing adapts to backlog (`WriteBatchMaxCount/Size`, `WriteBatchWait`) and hot-key pressure can expand batch limits temporarily to drain spikes.
 - Backpressure is enforced in two places: LSM throttling toggles `db.blockWrites` when L0 backlog grows, and HotRing can reject hot keys via `WriteHotKeyLimit`.
@@ -116,12 +116,12 @@ NoKV uses fail-fast reference counting for internal pooled/owned objects. `DecrR
 
 | Package | Responsibility |
 | --- | --- |
-| [`store`](../raftstore/store) | Region catalog, router, RegionMetrics, Region hooks, manifest integration, helpers such as `StartPeer` / `SplitRegion`. |
-| [`peer`](../raftstore/peer) | Wraps etcd/raft `RawNode`, handles Ready pipeline, snapshot resend queue, backlog instrumentation. |
-| [`engine`](../raftstore/engine) | WALStorage/DiskStorage/MemoryStorage, reusing the DB's WAL while keeping manifest metadata in sync. |
-| [`transport`](../raftstore/transport) | gRPC transport for Raft Step messages, connection management, retries/blocks/TLS. Also acts as the host for NoKV RPC. |
-| [`kv`](../raftstore/kv) | NoKV RPC handler plus `kv.Apply` bridging Raft commands to MVCC logic. |
-| [`server`](../raftstore/server) | `ServerConfig` + `New` combine DB, Store, transport, and NoKV service into a reusable node instance. |
+| [`store`](../cluster/raftstore/store) | Region catalog, router, RegionMetrics, Region hooks, manifest integration, helpers such as `StartPeer` / `SplitRegion`. |
+| [`peer`](../cluster/raftstore/peer) | Wraps etcd/raft `RawNode`, handles Ready pipeline, snapshot resend queue, backlog instrumentation. |
+| [`engine`](../cluster/raftstore/engine) | WALStorage/DiskStorage/MemoryStorage, reusing the DB's WAL while keeping manifest metadata in sync. |
+| [`transport`](../cluster/raftstore/transport) | gRPC transport for Raft Step messages, connection management, retries/blocks/TLS. Also acts as the host for NoKV RPC. |
+| [`kv`](../cluster/raftstore/kv) | NoKV RPC handler plus `kv.Apply` bridging Raft commands to MVCC logic. |
+| [`server`](../cluster/raftstore/server) | `ServerConfig` + `New` combine DB, Store, transport, and NoKV service into a reusable node instance. |
 
 ### 3.1 Bootstrap Sequence
 1. `raftstore.NewServer` wires DB, store configuration (StoreID, hooks, scheduler), Raft config, and transport address. It registers NoKV RPC on the shared gRPC server and sets `transport.SetHandler(store.Step)`.
@@ -142,7 +142,7 @@ NoKV uses fail-fast reference counting for internal pooled/owned objects. `DecrR
 
 ## 4. NoKV Service
 
-`raftstore/kv/service.go` exposes pb.NoKV RPCs:
+`cluster/raftstore/kv/service.go` exposes pb.NoKV RPCs:
 
 | RPC | Execution | Result |
 | --- | --- | --- |
@@ -153,7 +153,7 @@ NoKV uses fail-fast reference counting for internal pooled/owned objects. `DecrR
 | `KvResolveLock` | `percolator.ResolveLock` | `pb.ResolveLockResponse` |
 | `KvCheckTxnStatus` | `percolator.CheckTxnStatus` | `pb.CheckTxnStatusResponse` |
 
-`nokv serve` is the CLI entry point—open the DB, construct `raftstore.Server`, register peers, start local Raft peers, and display a manifest summary (Regions, key ranges, peers). `scripts/run_local_cluster.sh` builds the CLI, writes a minimal region manifest, launches multiple `nokv serve` processes on localhost, and handles cleanup on Ctrl+C.
+`nokv serve` is the CLI entry point—open the DB, construct `raftstore.Server`, register peers, start local Raft peers, and display a manifest summary (Regions, key ranges, peers). `tools/scripts/run_local_cluster.sh` builds the CLI, writes a minimal region manifest, launches multiple `nokv serve` processes on localhost, and handles cleanup on Ctrl+C.
 
 The RPC request/response shape is intentionally close to TinyKV/TiKV so the MVCC and region semantics remain familiar, but the service name exposed on the wire is `pb.NoKV`.
 
@@ -161,19 +161,19 @@ The RPC request/response shape is intentionally close to TinyKV/TiKV so the MVCC
 
 ## 5. Client Workflow
 
-`raftstore/client` offers a leader-aware client with retry logic and convenient helpers:
+`cluster/raftstore/client` offers a leader-aware client with retry logic and convenient helpers:
 
 - **Initialization**: provide `[]StoreEndpoint` + `RegionResolver` (`GetRegionByKey`) so runtime routing is PD-driven.
 - **Reads**: `Get` and `Scan` pick the leader store for a key range, issue NoKV RPCs, and retry on NotLeader/EpochNotMatch.
 - **Writes**: `Mutate` bundles operations per region and drives Prewrite/Commit (primary first, secondaries after); `Put` and `Delete` are convenience wrappers using the same 2PC path.
 - **Timestamps**: clients must supply `startVersion`/`commitVersion`. For distributed demos, use PD-lite (`nokv pd`) to obtain globally increasing values before calling `TwoPhaseCommit`.
-- **Bootstrap helpers**: `scripts/run_local_cluster.sh --config raft_config.example.json` builds the binaries, seeds manifests via `nokv-config manifest`, launches PD-lite, and starts the stores declared in the config.
+- **Bootstrap helpers**: `tools/scripts/run_local_cluster.sh --config raft_config.example.json` builds the binaries, seeds manifests via `nokv-config manifest`, launches PD-lite, and starts the stores declared in the config.
 
 **Example (two regions)**
 1. Regions `[a,m)` and `[m,+∞)`, each led by a different store.
 2. `Mutate(ctx, primary="alfa", mutations, startTs, commitTs, ttl)` prewrites and commits across the relevant regions.
 3. `Get/Scan` retries automatically if the leader changes.
-4. See `raftstore/server/server_test.go` for a full end-to-end example using real `raftstore.Server` instances.
+4. See `cluster/raftstore/server/server_test.go` for a full end-to-end example using real `raftstore.Server` instances.
 
 ---
 
@@ -192,16 +192,16 @@ The RPC request/response shape is intentionally close to TinyKV/TiKV so the MVCC
 - `nokv serve` advertises Region samples on startup (ID, key range, peers) for quick verification.
 - Inspect scheduler/control-plane state via PD APIs/metrics.
 - Scripts:
-  - `scripts/run_local_cluster.sh` – launch a multi-node NoKV cluster locally.
-  - `scripts/recovery_scenarios.sh` – crash-recovery test harness.
-  - `scripts/transport_chaos.sh` – inject network faults and observe transport metrics.
+  - `tools/scripts/run_local_cluster.sh` – launch a multi-node NoKV cluster locally.
+  - `tools/scripts/recovery_scenarios.sh` – crash-recovery test harness.
+  - `tools/scripts/transport_chaos.sh` – inject network faults and observe transport metrics.
 
 ---
 
 ## 8. When to Use NoKV
 
 - **Embedded**: call `NoKV.Open`, use the local non-transactional DB APIs.
-- **Distributed**: deploy `nokv serve` nodes, use `raftstore/client` (or any NoKV gRPC client) to perform reads, scans, and 2PC writes.
+- **Distributed**: deploy `nokv serve` nodes, use `cluster/raftstore/client` (or any NoKV gRPC client) to perform reads, scans, and 2PC writes.
 - **Observability-first**: inspection via CLI or expvar is built-in; Region, WAL, Flush, and Raft metrics are accessible without extra instrumentation.
 
 See also [`docs/raftstore.md`](raftstore.md) for deeper internals, [`docs/pd.md`](pd.md) for control-plane details, and [`docs/testing.md`](testing.md) for coverage details.

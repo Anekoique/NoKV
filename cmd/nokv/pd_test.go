@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/feichai0017/NoKV/config"
-	"github.com/feichai0017/NoKV/manifest"
+	"github.com/feichai0017/NoKV/cluster/config"
+	"github.com/feichai0017/NoKV/storage/manifest"
 	"github.com/feichai0017/NoKV/pd/core"
 	pdstorage "github.com/feichai0017/NoKV/pd/storage"
 

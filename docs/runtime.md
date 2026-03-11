@@ -12,14 +12,14 @@ It intentionally describes only what is running today.
 | Mode | Read APIs | Write APIs | Txn APIs |
 | --- | --- | --- | --- |
 | Embedded (`NoKV.DB`) | `Get`, `NewIterator`, `NewInternalIterator` | `Set`, `SetWithTTL`, `Del`, `ApplyInternalEntries` | N/A (no standalone local txn API) |
-| Distributed (`raftstore/kv`) | `KvGet`, `KvBatchGet`, `KvScan` | N/A direct write | `KvPrewrite`, `KvCommit`, `KvBatchRollback`, `KvResolveLock`, `KvCheckTxnStatus` |
+| Distributed (`cluster/raftstore/kv`) | `KvGet`, `KvBatchGet`, `KvScan` | N/A direct write | `KvPrewrite`, `KvCommit`, `KvBatchRollback`, `KvResolveLock`, `KvCheckTxnStatus` |
 
 Core entry points:
 
-- Embedded DB: [`db.go`](../db.go), [`db_write.go`](../db_write.go), [`iterator.go`](../iterator.go)
-- Distributed RPC: [`raftstore/kv/service.go`](../raftstore/kv/service.go)
-- Raft read/propose bridge: [`raftstore/store/command_service.go`](../raftstore/store/command_service.go)
-- MVCC logic: [`percolator/txn.go`](../percolator/txn.go), [`percolator/reader.go`](../percolator/reader.go)
+- Embedded DB: [`engine/db.go`](../engine/db.go), [`engine/db_write.go`](../engine/db_write.go), [`engine/iterator.go`](../engine/iterator.go)
+- Distributed RPC: [`cluster/raftstore/kv/service.go`](../cluster/raftstore/kv/service.go)
+- Raft read/propose bridge: [`cluster/raftstore/store/command_service.go`](../cluster/raftstore/store/command_service.go)
+- MVCC logic: [`cluster/percolator/txn.go`](../cluster/percolator/txn.go), [`cluster/percolator/reader.go`](../cluster/percolator/reader.go)
 
 ---
 
@@ -139,7 +139,7 @@ flowchart TD
 
 ### 5.1 Function-Level Chain
 
-1. `raftstore/kv.Service` builds `RaftCmdRequest` from NoKV RPC.
+1. `cluster/raftstore/kv.Service` builds `RaftCmdRequest` from NoKV RPC.
 2. `Store.ReadCommand`:
    - `validateCommand` (region/epoch/leader/key-range)
    - `peer.LinearizableRead`
@@ -177,7 +177,7 @@ sequenceDiagram
 
 ### 6.1 Function-Level Chain
 
-1. Client (`raftstore/client`) runs `Mutate` / `TwoPhaseCommit` by region.
+1. Client (`cluster/raftstore/client`) runs `Mutate` / `TwoPhaseCommit` by region.
 2. RPC layer (`kv.Service`) sends write commands through `Store.ProposeCommand`.
 3. Raft replication commits log entries; apply path invokes `kv.Apply`.
 4. `kv.Apply` dispatches to `percolator.Prewrite/Commit/BatchRollback/ResolveLock/CheckTxnStatus`.

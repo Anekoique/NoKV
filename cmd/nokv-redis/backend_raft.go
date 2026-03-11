@@ -11,10 +11,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/feichai0017/NoKV/config"
+	"github.com/feichai0017/NoKV/cluster/config"
 	"github.com/feichai0017/NoKV/pb"
 	pdclient "github.com/feichai0017/NoKV/pd/client"
-	"github.com/feichai0017/NoKV/raftstore/client"
+	"github.com/feichai0017/NoKV/cluster/raftstore/client"
 )
 
 type raftBackend struct {

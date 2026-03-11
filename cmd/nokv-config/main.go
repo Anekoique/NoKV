@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/feichai0017/NoKV/config"
-	"github.com/feichai0017/NoKV/manifest"
+	"github.com/feichai0017/NoKV/cluster/config"
+	"github.com/feichai0017/NoKV/storage/manifest"
 )
 
 var exit = os.Exit

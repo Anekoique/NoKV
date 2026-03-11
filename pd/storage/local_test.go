@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/feichai0017/NoKV/manifest"
+	"github.com/feichai0017/NoKV/storage/manifest"
 	"github.com/stretchr/testify/require"
 )
 

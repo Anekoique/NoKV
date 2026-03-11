@@ -7,6 +7,8 @@
 - [Error Handling](errors.md)
 - [Entry](entry.md)
 - [Configuration](config.md)
+- [Project Layout](project_layout.md)
+- [Refactor Summary](refactor_summary.md)
 - [CLI](cli.md)
 - [Memtable](memtable.md)
 - [Flush](flush.md)

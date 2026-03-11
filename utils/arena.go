@@ -6,7 +6,7 @@ import (
 	"sync/atomic"
 	"unsafe"
 
-	"github.com/feichai0017/NoKV/kv"
+	"github.com/feichai0017/NoKV/storage/kv"
 )
 
 const (

@@ -11,7 +11,7 @@ This guide gets you from zero to a running NoKV cluster (or an embedded DB) in a
 This launches a 3-node Raft cluster plus a PD-lite service.
 
 ```bash
-./scripts/run_local_cluster.sh --config ./raft_config.example.json
+./tools/scripts/run_local_cluster.sh --config ./raft_config.example.json
 ```
 
 Start the Redis-compatible gateway in another shell:
@@ -55,7 +55,7 @@ import (
 	"fmt"
 	"log"
 
-	NoKV "github.com/feichai0017/NoKV"
+	NoKV "github.com/feichai0017/NoKV/engine"
 )
 
 func main() {

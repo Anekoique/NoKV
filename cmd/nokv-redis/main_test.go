@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	NoKV "github.com/feichai0017/NoKV"
+	NoKV "github.com/feichai0017/NoKV/engine"
 	"github.com/stretchr/testify/require"
 )
 

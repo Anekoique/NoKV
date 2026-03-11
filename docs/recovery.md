@@ -36,14 +36,14 @@ flowchart TD
 
 | Failure Point | Expected Recovery Behaviour | Tests |
 | --- | --- | --- |
-| WAL tail truncated | Replay stops safely at truncated tail, preserving valid prefix records | `wal/manager_test.go::TestManagerReplayHandlesTruncate` |
-| Crash before memtable flush install | WAL replay restores user data not yet flushed to SST | `db_test.go::TestRecoveryWALReplayRestoresData` |
-| Manifest references missing SST | Startup removes stale manifest entry and continues | `db_test.go::TestRecoveryCleansMissingSSTFromManifest` |
-| Manifest references corrupt/unreadable SST | Startup removes stale entry and continues | `db_test.go::TestRecoveryCleansCorruptSSTFromManifest` |
-| ValueLog stale segment (manifest marked invalid) | Recovery deletes stale file from disk | `db_test.go::TestRecoveryRemovesStaleValueLogSegment` |
-| ValueLog orphan segment (disk only) | Recovery deletes orphan file not tracked by manifest | `db_test.go::TestRecoveryRemovesOrphanValueLogSegment` |
-| Manifest rewrite interrupted | Recovery keeps using CURRENT-selected manifest and data remains readable | `db_test.go::TestRecoveryManifestRewriteCrash` |
-| ValueLog contains records absent from LSM/WAL | Recovery does not replay vlog as source-of-truth | `db_test.go::TestRecoverySkipsValueLogReplay` |
+| WAL tail truncated | Replay stops safely at truncated tail, preserving valid prefix records | `storage/wal/manager_test.go::TestManagerReplayHandlesTruncate` |
+| Crash before memtable flush install | WAL replay restores user data not yet flushed to SST | `engine/db_test.go::TestRecoveryWALReplayRestoresData` |
+| Manifest references missing SST | Startup removes stale manifest entry and continues | `engine/db_test.go::TestRecoveryCleansMissingSSTFromManifest` |
+| Manifest references corrupt/unreadable SST | Startup removes stale entry and continues | `engine/db_test.go::TestRecoveryCleansCorruptSSTFromManifest` |
+| ValueLog stale segment (manifest marked invalid) | Recovery deletes stale file from disk | `engine/db_test.go::TestRecoveryRemovesStaleValueLogSegment` |
+| ValueLog orphan segment (disk only) | Recovery deletes orphan file not tracked by manifest | `engine/db_test.go::TestRecoveryRemovesOrphanValueLogSegment` |
+| Manifest rewrite interrupted | Recovery keeps using CURRENT-selected manifest and data remains readable | `engine/db_test.go::TestRecoveryManifestRewriteCrash` |
+| ValueLog contains records absent from LSM/WAL | Recovery does not replay vlog as source-of-truth | `engine/db_test.go::TestRecoverySkipsValueLogReplay` |
 
 ---
 
@@ -60,7 +60,7 @@ Set `RECOVERY_TRACE_METRICS=1` to emit `RECOVERY_METRIC ...` lines in tests.
 ### 3.2 Script harness
 
 ```bash
-RECOVERY_TRACE_METRICS=1 ./scripts/recovery_scenarios.sh
+RECOVERY_TRACE_METRICS=1 ./tools/scripts/recovery_scenarios.sh
 ```
 
 Outputs are saved under `artifacts/recovery/`.

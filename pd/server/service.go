@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/feichai0017/NoKV/manifest"
+	"github.com/feichai0017/NoKV/storage/manifest"
 	"github.com/feichai0017/NoKV/pb"
 	"github.com/feichai0017/NoKV/pd/core"
 	pdstorage "github.com/feichai0017/NoKV/pd/storage"

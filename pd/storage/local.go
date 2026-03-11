@@ -9,8 +9,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/feichai0017/NoKV/manifest"
-	"github.com/feichai0017/NoKV/vfs"
+	"github.com/feichai0017/NoKV/storage/manifest"
+	"github.com/feichai0017/NoKV/storage/vfs"
 )
 
 // LocalStore persists PD metadata to local files.

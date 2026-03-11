@@ -7,13 +7,13 @@ import (
 	"os"
 	"testing"
 
-	NoKV "github.com/feichai0017/NoKV"
-	"github.com/feichai0017/NoKV/manifest"
+	NoKV "github.com/feichai0017/NoKV/engine"
+	"github.com/feichai0017/NoKV/storage/manifest"
 	"github.com/feichai0017/NoKV/pb"
 	"github.com/feichai0017/NoKV/pd/core"
 	pdserver "github.com/feichai0017/NoKV/pd/server"
 	"github.com/feichai0017/NoKV/pd/tso"
-	"github.com/feichai0017/NoKV/raftstore"
+	"github.com/feichai0017/NoKV/cluster/raftstore"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 )

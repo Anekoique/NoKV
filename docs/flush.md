@@ -1,6 +1,6 @@
 # MemTable Flush Pipeline
 
-NoKV's flush path converts immutable memtables into L0 SST files, then advances the manifest WAL checkpoint and reclaims obsolete WAL segments. The task scheduler is in [`lsm/flush`](../lsm/flush); SST persistence and manifest install are in [`lsm/builder.go`](../lsm/builder.go) and [`lsm/levels.go`](../lsm/levels.go).
+NoKV's flush path converts immutable memtables into L0 SST files, then advances the manifest WAL checkpoint and reclaims obsolete WAL segments. The task scheduler is in [`storage/lsm/flush`](../storage/lsm/flush); SST persistence and manifest install are in [`storage/lsm/builder.go`](../storage/lsm/builder.go) and [`storage/lsm/levels.go`](../storage/lsm/levels.go).
 
 ---
 
@@ -95,8 +95,8 @@ to inspect flush backlog and latency.
 
 ## 7. Related Tests
 
-- `lsm/flush/manager_test.go`: queue/stage transitions and timing counters.
-- `db_test.go::TestRecoveryWALReplayRestoresData`: replay still restores data after crash before flush completion.
-- `db_test.go::TestRecoveryCleansMissingSSTFromManifest` and `db_test.go::TestRecoveryCleansCorruptSSTFromManifest`: stale manifest SST cleanup on startup.
+- `storage/lsm/flush/manager_test.go`: queue/stage transitions and timing counters.
+- `engine/db_test.go::TestRecoveryWALReplayRestoresData`: replay still restores data after crash before flush completion.
+- `engine/db_test.go::TestRecoveryCleansMissingSSTFromManifest` and `engine/db_test.go::TestRecoveryCleansCorruptSSTFromManifest`: stale manifest SST cleanup on startup.
 
 See also [recovery.md](recovery.md), [memtable.md](memtable.md), and [wal.md](wal.md).

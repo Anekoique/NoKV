@@ -80,7 +80,7 @@ fmt:
 proto:
 	@echo "Formatting .proto files and generating protobuf Go code..."
 	buf format -w
-	./scripts/gen.sh
+	./tools/scripts/gen.sh
 	@echo "✓ Protobufs formatted and generated"
 
 proto-check:
@@ -95,7 +95,7 @@ proto-check:
 	buf breaking --against ".git#ref=$$base_ref,subdir=pb"
 	@set -e; \
 	before="$$(sha256sum pb/*.pb.go pb/*_grpc.pb.go)"; \
-	./scripts/gen.sh; \
+	./tools/scripts/gen.sh; \
 	after="$$(sha256sum pb/*.pb.go pb/*_grpc.pb.go)"; \
 	test "$$before" = "$$after"
 	@echo "✓ Proto checks passed"
@@ -103,7 +103,7 @@ proto-check:
 # Run benchmarks
 bench:
 	@echo "Running benchmarks..."
-	./scripts/run_benchmarks.sh
+	./tools/scripts/run_benchmarks.sh
 
 # Install development tools
 install-tools:
@@ -140,7 +140,7 @@ clean:
 # Start local cluster (without Docker)
 local-cluster:
 	@echo "Starting local cluster..."
-	./scripts/run_local_cluster.sh --config ./raft_config.example.json
+	./tools/scripts/run_local_cluster.sh --config ./raft_config.example.json
 
 # Stop local cluster
 local-cluster-stop:

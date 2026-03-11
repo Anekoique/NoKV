@@ -1,6 +1,6 @@
 # Cache & Bloom Filters
 
-NoKV's LSM tier layers a multi-level block cache with bloom filter caching to accelerate lookups. The implementation is in [`lsm/cache.go`](../lsm/cache.go).
+NoKV's LSM tier layers a multi-level block cache with bloom filter caching to accelerate lookups. The implementation is in [`storage/lsm/cache.go`](../storage/lsm/cache.go).
 
 ---
 
@@ -8,10 +8,10 @@ NoKV's LSM tier layers a multi-level block cache with bloom filter caching to ac
 
 | Component | Purpose | Source |
 | --- | --- | --- |
-| `cache.indexs` | Table index cache (`fid` → `*pb.TableIndex`) reused across reopen. | [`utils/cache`](../utils/cache) |
-| `blockCache` | Ristretto-based block cache (L0/L1 only) with per-table direct slots. | [`lsm/cache.go`](../lsm/cache.go) |
-| `bloomCache` | LRU cache of bloom filter bitsets per SST. | [`lsm/cache.go`](../lsm/cache.go) |
-| `cacheMetrics` | Atomic hit/miss counters for L0/L1 blocks and blooms. | [`lsm/cache.go#L30-L110`](../lsm/cache.go#L30-L110) |
+| `cache.indexs` | Table index cache (`fid` → `*pb.TableIndex`) reused across reopen. | [`storage/cache`](../storage/cache) |
+| `blockCache` | Ristretto-based block cache (L0/L1 only) with per-table direct slots. | [`storage/lsm/cache.go`](../storage/lsm/cache.go) |
+| `bloomCache` | LRU cache of bloom filter bitsets per SST. | [`storage/lsm/cache.go`](../storage/lsm/cache.go) |
+| `cacheMetrics` | Atomic hit/miss counters for L0/L1 blocks and blooms. | [`storage/lsm/cache.go#L30-L110`](../storage/lsm/cache.go#L30-L110) |
 
 Badger uses a similar block cache split (`Pinner`/`Cache`) while RocksDB exposes block cache(s) via the `BlockBasedTableOptions`. NoKV keeps it Go-native and GC-friendly.
 

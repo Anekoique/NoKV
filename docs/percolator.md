@@ -1,6 +1,6 @@
 # Percolator Distributed Transaction Design
 
-This document explains NoKV's distributed transaction path implemented by `percolator/` and executed through `raftstore`.
+This document explains NoKV's distributed transaction path implemented by `cluster/percolator/` and executed through `raftstore`.
 
 The scope here is the current code path:
 
@@ -18,9 +18,9 @@ The scope here is the current code path:
 Percolator logic is executed on the Raft apply path:
 
 1. Client sends NoKV RPC (`KvPrewrite`, `KvCommit`, ...).
-2. `raftstore/kv/service.go` wraps it into a `RaftCmdRequest`.
+2. `cluster/raftstore/kv/service.go` wraps it into a `RaftCmdRequest`.
 3. Store proposes command through Raft.
-4. On apply, `raftstore/kv/apply.go` dispatches to `percolator.*`.
+4. On apply, `cluster/raftstore/kv/apply.go` dispatches to `percolator.*`.
 
 ```mermaid
 sequenceDiagram
@@ -41,12 +41,12 @@ sequenceDiagram
 
 Key files:
 
-- [`percolator/txn.go`](../percolator/txn.go)
-- [`percolator/reader.go`](../percolator/reader.go)
-- [`percolator/codec.go`](../percolator/codec.go)
-- [`percolator/latch/latch.go`](../percolator/latch/latch.go)
-- [`raftstore/kv/apply.go`](../raftstore/kv/apply.go)
-- [`raftstore/client/client.go`](../raftstore/client/client.go)
+- [`cluster/percolator/txn.go`](../cluster/percolator/txn.go)
+- [`cluster/percolator/reader.go`](../cluster/percolator/reader.go)
+- [`cluster/percolator/codec.go`](../cluster/percolator/codec.go)
+- [`cluster/percolator/latch/latch.go`](../cluster/percolator/latch/latch.go)
+- [`cluster/raftstore/kv/apply.go`](../cluster/raftstore/kv/apply.go)
+- [`cluster/raftstore/client/client.go`](../cluster/raftstore/client/client.go)
 
 ### 1.1 RPC to Percolator Function Mapping
 
@@ -98,7 +98,7 @@ Before mutating keys, percolator acquires striped latches:
 - Stripes are deduplicated and acquired in sorted order to avoid deadlocks.
 - Guard releases in reverse order.
 
-In `raftstore/kv`, latches are passed explicitly:
+In `cluster/raftstore/kv`, latches are passed explicitly:
 
 - `NewEntryApplier` creates one `latch.NewManager(512)` and reuses it.
 - `Apply` / `NewApplier` accept an injected manager; `nil` falls back to `latch.NewManager(512)`.
@@ -109,7 +109,7 @@ This serializes conflicting apply operations on overlapping keys in one node.
 
 ## 4. Two-Phase Commit Flow
 
-Client side (`raftstore/client.Client.TwoPhaseCommit`):
+Client side (`cluster/raftstore/client.Client.TwoPhaseCommit`):
 
 1. Group mutations by region.
 2. Prewrite primary region.
@@ -251,9 +251,9 @@ Notes:
 
 Primary coverage:
 
-- [`percolator/txn_test.go`](../percolator/txn_test.go)
-- [`raftstore/kv/service_test.go`](../raftstore/kv/service_test.go)
-- [`raftstore/client/client_test.go`](../raftstore/client/client_test.go)
-- [`raftstore/server/server_test.go`](../raftstore/server/server_test.go)
+- [`cluster/percolator/txn_test.go`](../cluster/percolator/txn_test.go)
+- [`cluster/raftstore/kv/service_test.go`](../cluster/raftstore/kv/service_test.go)
+- [`cluster/raftstore/client/client_test.go`](../cluster/raftstore/client/client_test.go)
+- [`cluster/raftstore/server/server_test.go`](../cluster/raftstore/server/server_test.go)
 
 These tests cover 2PC happy path, lock conflicts, status checks, resolve/rollback behavior, and client region-aware retries.

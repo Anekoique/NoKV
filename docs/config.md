@@ -2,7 +2,7 @@
 
 NoKV exposes two configuration surfaces:
 
-1. **Runtime options** for the embedded engine (`Options` in `options.go`).
+1. **Runtime options** for the embedded engine (`Options` in `engine/options.go`).
 2. **Cluster topology** for distributed mode (`raft_config.example.json` via
    `config.LoadFile/Validate`).
 
@@ -13,7 +13,7 @@ NoKV exposes two configuration surfaces:
 `NoKV.NewDefaultOptions()` returns a tuned baseline. Override fields before
 calling `NoKV.Open(opt)`.
 
-Key option groups (see `options.go` for the full list):
+Key option groups (see `engine/options.go` for the full list):
 
 - **Paths & durability**
   - `WorkDir`, `SyncWrites`, `ManifestSync`, `ManifestRewriteThreshold`
@@ -146,5 +146,5 @@ if err := cfg.Validate(); err != nil { /* handle */ }
 ```
 
 Related tools:
-- `scripts/run_local_cluster.sh --config raft_config.example.json`
+- `tools/scripts/run_local_cluster.sh --config raft_config.example.json`
 - `go run ./cmd/nokv-redis --raft-config raft_config.example.json`

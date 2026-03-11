@@ -8,12 +8,12 @@
 
 | Package | Responsibility |
 | --- | --- |
-| [`store`](../raftstore/store) | Orchestrates peer set, command pipeline, region manager, scheduler/heartbeat loops; exposes helpers such as `StartPeer`, `ProposeCommand`, `SplitRegion`. |
-| [`peer`](../raftstore/peer) | Wraps etcd/raft `RawNode`, drives Ready processing (persist to WAL, send messages, apply entries), tracks snapshot resend/backlog. |
-| [`engine`](../raftstore/engine) | WALStorage/DiskStorage/MemoryStorage across all Raft groups, leveraging the NoKV WAL while keeping manifest metadata in sync. |
-| [`transport`](../raftstore/transport) | gRPC transport with retry/TLS/backpressure; exposes the raft Step RPC and can host additional services (NoKV). |
-| [`kv`](../raftstore/kv) | NoKV RPC implementation, bridging Raft commands to MVCC operations via `kv.Apply`. |
-| [`server`](../raftstore/server) | `ServerConfig` + `New` that bind DB, Store, transport, and NoKV server into a reusable node primitive. |
+| [`store`](../cluster/raftstore/store) | Orchestrates peer set, command pipeline, region manager, scheduler/heartbeat loops; exposes helpers such as `StartPeer`, `ProposeCommand`, `SplitRegion`. |
+| [`peer`](../cluster/raftstore/peer) | Wraps etcd/raft `RawNode`, drives Ready processing (persist to WAL, send messages, apply entries), tracks snapshot resend/backlog. |
+| [`engine`](../cluster/raftstore/engine) | WALStorage/DiskStorage/MemoryStorage across all Raft groups, leveraging the NoKV WAL while keeping manifest metadata in sync. |
+| [`transport`](../cluster/raftstore/transport) | gRPC transport with retry/TLS/backpressure; exposes the raft Step RPC and can host additional services (NoKV). |
+| [`kv`](../cluster/raftstore/kv) | NoKV RPC implementation, bridging Raft commands to MVCC operations via `kv.Apply`. |
+| [`server`](../cluster/raftstore/server) | `ServerConfig` + `New` that bind DB, Store, transport, and NoKV server into a reusable node primitive. |
 
 ---
 
@@ -116,12 +116,12 @@ The `cmd/nokv serve` command uses `raftstore.Server` internally and prints a man
 
 ---
 
-## 7. Client Interaction (`raftstore/client`)
+## 7. Client Interaction (`cluster/raftstore/client`)
 
 - Region-aware routing with NotLeader/EpochNotMatch retry.
 - `Mutate` splits mutations by region and performs two-phase commit (primary first). `Put` / `Delete` are convenience wrappers.
 - `Scan` transparently walks region boundaries.
-- End-to-end coverage lives in `raftstore/server/server_test.go`, which launches real servers, uses the client to write and delete keys, and verifies the results.
+- End-to-end coverage lives in `cluster/raftstore/server/server_test.go`, which launches real servers, uses the client to write and delete keys, and verifies the results.
 
 ---
 
@@ -130,7 +130,7 @@ The `cmd/nokv serve` command uses `raftstore.Server` internally and prints a man
 ### 8.1 Topology & Routing
 - Topology is sourced from `raft_config.example.json` (via `config.LoadFile`) and
   reused by scripts, Docker Compose, and the Redis gateway.
-- Runtime routing is PD-first: `raftstore/client` resolves Regions by key through
+- Runtime routing is PD-first: `cluster/raftstore/client` resolves Regions by key through
   `GetRegionByKey` and caches route entries for retries.
 - `raft_config` regions are treated as bootstrap/deployment metadata and are not
   the runtime source of truth once PD is available.
@@ -152,24 +152,24 @@ The `cmd/nokv serve` command uses `raftstore.Server` internally and prints a man
 
 - `store.RegionMetrics()` feeds into `StatsSnapshot`, making region counts and backlog visible via expvar and `nokv stats`.
 - `nokv regions` shows manifest-backed regions: ID, range, peers, state.
-- `scripts/transport_chaos.sh` exercises transport metrics under faults; `scripts/run_local_cluster.sh` spins up multi-node clusters for manual inspection.
+- `tools/scripts/transport_chaos.sh` exercises transport metrics under faults; `tools/scripts/run_local_cluster.sh` spins up multi-node clusters for manual inspection.
 
 ### Store internals at a glance
 
 | Component | File | Responsibility |
 | --- | --- | --- |
-| Store facade | [`store.go`](../raftstore/store/store.go) | Store construction/wiring and shared component ownership (router, region manager, command pipeline, scheduler runtime). |
-| Peer lifecycle | [`peer_lifecycle.go`](../raftstore/store/peer_lifecycle.go) | Start/stop peers, router registration, lifecycle hooks, and store shutdown sequencing. |
-| Command service | [`command_service.go`](../raftstore/store/command_service.go) | Region/epoch/key-range validation and read/propose request handling. |
-| Admin service | [`admin_service.go`](../raftstore/store/admin_service.go) | Split/merge proposal handling and applied admin command side effects. |
-| Membership service | [`membership_service.go`](../raftstore/store/membership_service.go) | Conf-change proposal helpers and manifest metadata updates after membership changes. |
-| Region catalog | [`region_catalog.go`](../raftstore/store/region_catalog.go) | Public region catalog accessors and region metadata lifecycle operations. |
-| Scheduler runtime | [`scheduler_runtime.go`](../raftstore/store/scheduler_runtime.go) | Scheduler snapshot generation, store stats, operation application, and apply-entry dispatch. |
-| Peer set | [`peer_set.go`](../raftstore/store/peer_set.go) | Tracks active peers and exposes thread-safe lookups/iteration snapshots. |
-| Command pipeline | [`command_pipeline.go`](../raftstore/store/command_pipeline.go) | Assigns request IDs, records proposals, matches apply results, returns responses/errors to callers. |
-| Region manager | [`region_manager.go`](../raftstore/store/region_manager.go) | Validates state transitions, writes manifest edits, updates peer metadata, triggers region hooks. |
-| Operation scheduler | [`operation_scheduler.go`](../raftstore/store/operation_scheduler.go) | Buffers planner output, enforces cooldown & burst limits, dispatches leader transfers or other operations. |
-| Heartbeat loop | [`heartbeat_loop.go`](../raftstore/store/heartbeat_loop.go) | Periodically publishes region/store heartbeats and, when the sink implements planner capability, drains scheduling actions. |
+| Store facade | [`store.go`](../cluster/raftstore/store/store.go) | Store construction/wiring and shared component ownership (router, region manager, command pipeline, scheduler runtime). |
+| Peer lifecycle | [`peer_lifecycle.go`](../cluster/raftstore/store/peer_lifecycle.go) | Start/stop peers, router registration, lifecycle hooks, and store shutdown sequencing. |
+| Command service | [`command_service.go`](../cluster/raftstore/store/command_service.go) | Region/epoch/key-range validation and read/propose request handling. |
+| Admin service | [`admin_service.go`](../cluster/raftstore/store/admin_service.go) | Split/merge proposal handling and applied admin command side effects. |
+| Membership service | [`membership_service.go`](../cluster/raftstore/store/membership_service.go) | Conf-change proposal helpers and manifest metadata updates after membership changes. |
+| Region catalog | [`region_catalog.go`](../cluster/raftstore/store/region_catalog.go) | Public region catalog accessors and region metadata lifecycle operations. |
+| Scheduler runtime | [`scheduler_runtime.go`](../cluster/raftstore/store/scheduler_runtime.go) | Scheduler snapshot generation, store stats, operation application, and apply-entry dispatch. |
+| Peer set | [`peer_set.go`](../cluster/raftstore/store/peer_set.go) | Tracks active peers and exposes thread-safe lookups/iteration snapshots. |
+| Command pipeline | [`command_pipeline.go`](../cluster/raftstore/store/command_pipeline.go) | Assigns request IDs, records proposals, matches apply results, returns responses/errors to callers. |
+| Region manager | [`region_manager.go`](../cluster/raftstore/store/region_manager.go) | Validates state transitions, writes manifest edits, updates peer metadata, triggers region hooks. |
+| Operation scheduler | [`operation_scheduler.go`](../cluster/raftstore/store/operation_scheduler.go) | Buffers planner output, enforces cooldown & burst limits, dispatches leader transfers or other operations. |
+| Heartbeat loop | [`heartbeat_loop.go`](../cluster/raftstore/store/heartbeat_loop.go) | Periodically publishes region/store heartbeats and, when the sink implements planner capability, drains scheduling actions. |
 
 ---
 

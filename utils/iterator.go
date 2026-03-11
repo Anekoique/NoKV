@@ -1,6 +1,6 @@
 package utils
 
-import "github.com/feichai0017/NoKV/kv"
+import "github.com/feichai0017/NoKV/storage/kv"
 
 // Iterator abstracts key/value iteration.
 type Iterator interface {

@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/feichai0017/NoKV/manifest"
+	"github.com/feichai0017/NoKV/storage/manifest"
 )
 
 // StoreStats captures store-level heartbeat data tracked by PD.

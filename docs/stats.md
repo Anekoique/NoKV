@@ -6,7 +6,7 @@ NoKV exposes runtime health through:
 - `expvar` (`/debug/vars`)
 - `nokv stats` CLI (plain text or JSON)
 
-The implementation lives in [`stats.go`](../stats.go), and collection runs continuously once DB is open.
+The implementation lives in [`engine/stats.go`](../engine/stats.go), and collection runs continuously once DB is open.
 
 ---
 

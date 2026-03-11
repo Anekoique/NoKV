@@ -7,9 +7,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/feichai0017/NoKV/manifest"
+	"github.com/feichai0017/NoKV/storage/manifest"
 	"github.com/feichai0017/NoKV/pb"
-	"github.com/feichai0017/NoKV/raftstore/scheduler"
+	"github.com/feichai0017/NoKV/cluster/raftstore/scheduler"
 )
 
 type fakePDClient struct {

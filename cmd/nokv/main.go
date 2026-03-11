@@ -13,10 +13,10 @@ import (
 	"strings"
 	"time"
 
-	NoKV "github.com/feichai0017/NoKV"
-	"github.com/feichai0017/NoKV/manifest"
-	"github.com/feichai0017/NoKV/metrics"
-	vlogpkg "github.com/feichai0017/NoKV/vlog"
+	NoKV "github.com/feichai0017/NoKV/engine"
+	"github.com/feichai0017/NoKV/storage/manifest"
+	"github.com/feichai0017/NoKV/observability/metrics"
+	vlogpkg "github.com/feichai0017/NoKV/storage/vlog"
 )
 
 var exit = os.Exit

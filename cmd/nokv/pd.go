@@ -13,8 +13,8 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/feichai0017/NoKV/config"
-	"github.com/feichai0017/NoKV/manifest"
+	"github.com/feichai0017/NoKV/cluster/config"
+	"github.com/feichai0017/NoKV/storage/manifest"
 	"github.com/feichai0017/NoKV/pb"
 	"github.com/feichai0017/NoKV/pd/core"
 	pdserver "github.com/feichai0017/NoKV/pd/server"

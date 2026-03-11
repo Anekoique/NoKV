@@ -6,10 +6,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/feichai0017/NoKV/manifest"
+	"github.com/feichai0017/NoKV/storage/manifest"
 	"github.com/feichai0017/NoKV/pb"
 	pdclient "github.com/feichai0017/NoKV/pd/client"
-	"github.com/feichai0017/NoKV/raftstore/scheduler"
+	"github.com/feichai0017/NoKV/cluster/raftstore/scheduler"
 )
 
 const defaultRPCTimeout = 2 * time.Second

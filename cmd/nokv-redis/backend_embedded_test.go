@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	NoKV "github.com/feichai0017/NoKV"
+	NoKV "github.com/feichai0017/NoKV/engine"
 	"github.com/feichai0017/NoKV/utils"
 )
 

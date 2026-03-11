@@ -94,7 +94,7 @@ Helpers:
 
 NoKV now uses **PD-first routing**:
 
-- `raftstore/client` resolves regions with `GetRegionByKey`.
+- `cluster/raftstore/client` resolves regions with `GetRegionByKey`.
 - `raft_config` regions are bootstrap/deployment metadata.
 - Runtime route truth comes from PD heartbeats + PD region catalog.
 

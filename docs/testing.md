@@ -11,22 +11,22 @@ This document inventories NoKV's automated coverage and provides guidance for ex
 GOCACHE=$PWD/.gocache GOMODCACHE=$PWD/.gomodcache go test ./...
 
 # Focused distributed transaction suite
-go test ./percolator/... ./raftstore/client/... -run 'Test.*(Commit|Prewrite|TwoPhaseCommit)'
+go test ./cluster/percolator/... ./cluster/raftstore/client/... -run 'Test.*(Commit|Prewrite|TwoPhaseCommit)'
 
 # Crash recovery scenarios
-RECOVERY_TRACE_METRICS=1 ./scripts/recovery_scenarios.sh
+RECOVERY_TRACE_METRICS=1 ./tools/scripts/recovery_scenarios.sh
 
 # Protobuf schema hygiene
 make proto-check
 
 # gRPC transport chaos tests + watchdog metrics
-CHAOS_TRACE_METRICS=1 ./scripts/transport_chaos.sh
+CHAOS_TRACE_METRICS=1 ./tools/scripts/transport_chaos.sh
 
 # Sample PD-lite service for shared TSO / routing in distributed tests
 go run ./cmd/nokv pd --addr 127.0.0.1:2379 --id-start 1 --ts-start 100 --workdir ./artifacts/pd
 
 # Local three-node cluster (includes manifest bootstrap + PD-lite)
-./scripts/run_local_cluster.sh --config ./raft_config.example.json
+./tools/scripts/run_local_cluster.sh --config ./raft_config.example.json
 # Tear down with Ctrl+C
 
 # Docker-compose sandbox (3 nodes + PD-lite)
@@ -34,19 +34,19 @@ docker compose up --build
 docker compose down -v
 
 # Build RocksDB locally (installs into ./third_party/rocksdb/dist by default)
-./scripts/build_rocksdb.sh
+./tools/scripts/build_rocksdb.sh
 # YCSB baseline (records=1e6, ops=1e6, warmup=1e5, conc=16)
-./scripts/run_benchmarks.sh
+./tools/scripts/run_benchmarks.sh
 # YCSB with RocksDB (requires CGO, `benchmark_rocksdb`, and the RocksDB build above)
 LD_LIBRARY_PATH="$(pwd)/third_party/rocksdb/dist/lib:${LD_LIBRARY_PATH}" \
 CGO_CFLAGS="-I$(pwd)/third_party/rocksdb/dist/include" \
 CGO_LDFLAGS="-L$(pwd)/third_party/rocksdb/dist/lib -lrocksdb -lz -lbz2 -lsnappy -lzstd -llz4" \
-YCSB_ENGINES="nokv,badger,rocksdb" ./scripts/run_benchmarks.sh
+YCSB_ENGINES="nokv,badger,rocksdb" ./tools/scripts/run_benchmarks.sh
 # One-click script (auto-detect RocksDB, supports `YCSB_*` env vars to override defaults)
-./scripts/run_benchmarks.sh
+./tools/scripts/run_benchmarks.sh
 # Quick smoke run (smaller dataset)
 NOKV_RUN_BENCHMARKS=1 YCSB_RECORDS=10000 YCSB_OPS=50000 YCSB_WARM_OPS=0 \
-./scripts/run_benchmarks.sh -ycsb_workloads=A -ycsb_engines=nokv
+./tools/scripts/run_benchmarks.sh -ycsb_workloads=A -ycsb_engines=nokv
 ```
 
 > Tip: Pin `GOCACHE`/`GOMODCACHE` in CI to keep build artefacts local and avoid permission issues.
@@ -57,16 +57,16 @@ NOKV_RUN_BENCHMARKS=1 YCSB_RECORDS=10000 YCSB_OPS=50000 YCSB_WARM_OPS=0 \
 
 | Module | Tests | Coverage Highlights | Gaps / Next Steps |
 | --- | --- | --- | --- |
-| WAL | `wal/manager_test.go` | Segment rotation, sync semantics, replay tolerance for truncation, directory bootstrap. | Add IO fault injection, concurrent append stress. |
-| LSM / Flush / Compaction | `lsm/lsm_test.go`, `lsm/compaction_test.go`, `lsm/compact/*_test.go`, `lsm/flush/manager_test.go` | Memtable correctness, iterator merging, flush pipeline metrics, compaction scheduling. | Extend backpressure assertions, test cache hot/cold split. |
-| Manifest | `manifest/manager_test.go`, `lsm/manifest_test.go` | CURRENT swap safety, rewrite crash handling, vlog metadata persistence. | Simulate partial edit corruption, column family extensions. |
-| ValueLog | `vlog/manager_test.go`, `vlog/io_test.go`, `vlog_test.go` | ValuePtr encoding/decoding, GC rewrite/rewind, concurrent iterator safety. | Long-running GC, discard-ratio edge cases. |
-| Percolator / Distributed Txn | `percolator/*_test.go`, `raftstore/client/client_test.go`, `stats_test.go` | Prewrite/Commit/ResolveLock flows, 2PC retries, timestamp-driven MVCC behaviour, metrics accounting. | Mixed multi-region fuzzing with lock TTL and leader churn. |
-| DB Integration | `db_test.go`, `db_write_bench_test.go` | End-to-end writes, recovery, and throttle behaviour. | Combine ValueLog GC + compaction stress, multi-DB interference. |
-| CLI & Stats | `cmd/nokv/main_test.go`, `stats_test.go` | Golden JSON output, stats snapshot correctness, hot key ranking. | CLI error handling, expvar HTTP integration tests. |
+| WAL | `storage/wal/manager_test.go` | Segment rotation, sync semantics, replay tolerance for truncation, directory bootstrap. | Add IO fault injection, concurrent append stress. |
+| LSM / Flush / Compaction | `storage/lsm/lsm_test.go`, `storage/lsm/compaction_test.go`, `storage/lsm/compact/*_test.go`, `storage/lsm/flush/manager_test.go` | Memtable correctness, iterator merging, flush pipeline metrics, compaction scheduling. | Extend backpressure assertions, test cache hot/cold split. |
+| Manifest | `storage/manifest/manager_test.go`, `storage/lsm/manifest_test.go` | CURRENT swap safety, rewrite crash handling, vlog metadata persistence. | Simulate partial edit corruption, column family extensions. |
+| ValueLog | `storage/vlog/manager_test.go`, `storage/vlog/io_test.go`, `engine/vlog_test.go` | ValuePtr encoding/decoding, GC rewrite/rewind, concurrent iterator safety. | Long-running GC, discard-ratio edge cases. |
+| Percolator / Distributed Txn | `cluster/percolator/*_test.go`, `cluster/raftstore/client/client_test.go`, `engine/stats_test.go` | Prewrite/Commit/ResolveLock flows, 2PC retries, timestamp-driven MVCC behaviour, metrics accounting. | Mixed multi-region fuzzing with lock TTL and leader churn. |
+| DB Integration | `engine/db_test.go`, `engine/db_write_bench_test.go` | End-to-end writes, recovery, and throttle behaviour. | Combine ValueLog GC + compaction stress, multi-DB interference. |
+| CLI & Stats | `cmd/nokv/main_test.go`, `engine/stats_test.go` | Golden JSON output, stats snapshot correctness, hot key ranking. | CLI error handling, expvar HTTP integration tests. |
 | Redis Gateway | `cmd/nokv-redis/backend_embedded_test.go`, `cmd/nokv-redis/server_test.go`, `cmd/nokv-redis/backend_raft_test.go` | Embedded backend semantics (NX/XX, TTL, counters), RESP parser, raft backend config wiring, and PD-backed routing/TSO discovery. | End-to-end multi-region CRUD with raft backend, TTL lock cleanup under failures. |
 | Scripts & Tooling | `cmd/nokv-config/main_test.go`, `cmd/nokv/serve_test.go` | `nokv-config` JSON/simple formats, manifest logging CLI, serve bootstrap behavior. | Add direct shell-script golden tests (currently not present) and failure-path diagnostics for `run_local_cluster.sh`. |
-| Benchmark | `benchmark/ycsb_test.go`, `benchmark/ycsb_runner.go` | YCSB throughput/latency comparisons across engines (A-G) with detailed percentile + operation mix reporting. | Automate multi-node deployments and add longer-running, multi-GB stability baselines. |
+| Benchmark | `tools/bench/ycsb_test.go`, `tools/bench/ycsb_runner.go` | YCSB throughput/latency comparisons across engines (A-G) with detailed percentile + operation mix reporting. | Automate multi-node deployments and add longer-running, multi-GB stability baselines. |
 
 ---
 
@@ -74,23 +74,23 @@ NOKV_RUN_BENCHMARKS=1 YCSB_RECORDS=10000 YCSB_OPS=50000 YCSB_WARM_OPS=0 \
 
 | Scenario | Coverage | Focus |
 | --- | --- | --- |
-| Crash recovery | `db_test.go`, `scripts/recovery_scenarios.sh` | WAL replay, missing SST cleanup, vlog GC restart, manifest rewrite safety. |
-| WAL pointer desync | `raftstore/engine/wal_storage_test.go::TestWALStorageDetectsTruncatedSegment` | Detects manifest pointer offsets beyond truncated WAL tails to avoid silent corruption. |
-| Distributed transaction contention | `raftstore/client/client_test.go::TestClientTwoPhaseCommitAndGet`, `percolator/*_test.go` | Lock conflicts, retries, and 2PC sequencing under region routing. |
-| Value separation + GC | `vlog/manager_test.go`, `db_test.go::TestRecoveryRemovesStaleValueLogSegment` | GC correctness, manifest integration, iterator stability. |
-| Iterator consistency | `lsm/iterator_test.go` | Snapshot visibility, merging iterators across levels and memtables. |
-| Throttling / backpressure | `lsm/compaction_test.go`, `db_test.go::TestWriteThrottle` | L0 backlog triggers, flush queue growth, metrics observation. |
-| Distributed NoKV client | `raftstore/client/client_test.go::TestClientTwoPhaseCommitAndGet`, `raftstore/transport/grpc_transport_test.go::TestGRPCTransportManualTicksDriveElection` | Region-aware routing, NotLeader retries, manual tick-driven elections, cross-region 2PC sequencing. |
-| Performance regression | `benchmark` package | Compare NoKV vs Badger/Pebble by default (RocksDB optional), produce human-readable reports under `benchmark/benchmark_results`. |
+| Crash recovery | `engine/db_test.go`, `tools/scripts/recovery_scenarios.sh` | WAL replay, missing SST cleanup, vlog GC restart, manifest rewrite safety. |
+| WAL pointer desync | `cluster/raftstore/engine/wal_storage_test.go::TestWALStorageDetectsTruncatedSegment` | Detects manifest pointer offsets beyond truncated WAL tails to avoid silent corruption. |
+| Distributed transaction contention | `cluster/raftstore/client/client_test.go::TestClientTwoPhaseCommitAndGet`, `cluster/percolator/*_test.go` | Lock conflicts, retries, and 2PC sequencing under region routing. |
+| Value separation + GC | `storage/vlog/manager_test.go`, `engine/db_test.go::TestRecoveryRemovesStaleValueLogSegment` | GC correctness, manifest integration, iterator stability. |
+| Iterator consistency | `storage/lsm/iterator_test.go` | Snapshot visibility, merging iterators across levels and memtables. |
+| Throttling / backpressure | `storage/lsm/compaction_test.go`, `engine/db_test.go::TestWriteThrottle` | L0 backlog triggers, flush queue growth, metrics observation. |
+| Distributed NoKV client | `cluster/raftstore/client/client_test.go::TestClientTwoPhaseCommitAndGet`, `cluster/raftstore/transport/grpc_transport_test.go::TestGRPCTransportManualTicksDriveElection` | Region-aware routing, NotLeader retries, manual tick-driven elections, cross-region 2PC sequencing. |
+| Performance regression | `tools/bench` package | Compare NoKV vs Badger/Pebble by default (RocksDB optional), produce human-readable reports under `tools/bench/benchmark_results`. |
 
 ---
 
 ## 4. Observability in Tests
 
 - **RECOVERY_METRIC logs** – produced when `RECOVERY_TRACE_METRICS=1`; consumed by recovery script and helpful when triaging CI failures.
-- **TRANSPORT_METRIC logs** – emitted by `scripts/transport_chaos.sh` when `CHAOS_TRACE_METRICS=1`, capturing gRPC watchdog counters during network partitions and retries.
-- **Stats snapshots** – `stats_test.go` verifies JSON structure so CLI output remains backwards compatible.
-- **Benchmark artefacts** – stored under `benchmark/benchmark_results/*.txt` for historical comparison. Aligns with README instructions.
+- **TRANSPORT_METRIC logs** – emitted by `tools/scripts/transport_chaos.sh` when `CHAOS_TRACE_METRICS=1`, capturing gRPC watchdog counters during network partitions and retries.
+- **Stats snapshots** – `engine/stats_test.go` verifies JSON structure so CLI output remains backwards compatible.
+- **Benchmark artefacts** – stored under `tools/bench/benchmark_results/*.txt` for historical comparison. Aligns with README instructions.
 
 ---
 
